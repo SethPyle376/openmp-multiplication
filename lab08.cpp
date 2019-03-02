@@ -1,4 +1,3 @@
-
 /***********************************************************************
  * Program:
  *    Week 08, OpenMP Lab
@@ -43,6 +42,7 @@ bool readMatrix(const char * fileName,
                 int & numCol);
 bool multiply(MatrixMultiplication & m, const int numThreads);
 void display( MatrixMultiplication & m);
+int getThreads();
 
 /*************************************************
  * MAIN
@@ -79,7 +79,7 @@ int main(int argc, char ** argv)
    matrix.numColRHS = numCol;
 
    // multiply
-   if (!multiply(matrix, 5))
+   if (!multiply(matrix, getThreads()))
       cout << "Unable to perform matrix multiplication\n";
    else
       display(matrix);
@@ -89,6 +89,14 @@ int main(int argc, char ** argv)
    delete [] matrix.arrayRHS;
    delete [] matrix.arrayDestination;
    return 0;
+}
+
+int getThreads()
+{
+   int numThreads;
+   cout << "How many threads? ";
+   cin >> numThreads;
+   return numThreads;
 }
 
 /*******************************************************
@@ -150,22 +158,14 @@ bool multiply(MatrixMultiplication & m, const int numThreads)
    if (m.numRowRHS != m.numColLHS)
       return false;
 
-   int commonSize = m.numRowRHS;
-
-#pragma omp parallel for num_threads(numThreads) shared(m) private(commonSize)
+   #pragma omp parallel for num_threads(numThreads) shared(m)
    for (int i = 0; i < numRowDes; i++)
    {
       for (int j = 0; j < numColDes; j++)
       {
-         int target = i * numColDes + j;
-         m.arrayDestination[target] = 0;
-         for (int k = 0; i < commonSize; k++)
+         for (int k = 0; k < m.numColLHS; k++)
          {
-            int lhsTarget = i * (numColDes - 1) + k;
-            int rhsTarget = j + k * (numColDes - 1);
-            int cellValue = m.arrayLHS[lhsTarget] * m.arrayRHS[rhsTarget];
-            cout << cellValue << endl;
-            m.arrayDestination += cellValue;
+            m.arrayDestination[i * numColDes + j] += m.arrayLHS[i * m.numColLHS + k] * m.arrayRHS[k * m.numColRHS + j];
          }
       }
    }
@@ -226,5 +226,3 @@ void display(MatrixMultiplication & m)
       cout << endl;
    }
 }
-
-
